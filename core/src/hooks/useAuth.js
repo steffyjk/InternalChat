@@ -42,6 +42,8 @@ export function useAuth() {
         fcm_token
       );
       if (data.success) {
+        const token = data?.data?.token;
+        const user_details = data?.data?.user_details;
         const authData = {
           access_token: token.access_token,
           refresh_token: token.refresh_token,
