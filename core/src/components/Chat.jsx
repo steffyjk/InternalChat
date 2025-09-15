@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useChatSocket } from "../hooks/useChatSocket";
 import InviteList from "./InviteList";
+import PendingRequests from "./PendingRequests";
 
 export default function Chat({ user }) {
   const authData = JSON.parse(localStorage.getItem("authData"));
@@ -12,7 +13,8 @@ export default function Chat({ user }) {
   const [searchResults, setSearchResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [step, setStep] = useState("chat"); // chat | invite
+  const [step, setStep] = useState("chat"); // chat | invite | requests
+  const [requests, setRequests] = useState([]);
 
   // 🔍 Search API call
   const handleSearch = async (e) => {
@@ -47,13 +49,44 @@ export default function Chat({ user }) {
     }
   };
 
+  // 📩 Fetch pending requests
+  const handleRequests = async () => {
+    try {
+      setLoading(true);
+      setErrorMsg("");
+
+      const res = await fetch(
+        "http://localhost:8000/invite/get_invitation_request",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`Requests fetch failed: ${res.status}`);
+      }
+
+      const data = await res.json();
+      setRequests(data?.data?.invitation_request || []);
+      setStep("requests"); // 👉 Switch to requests page
+    } catch (err) {
+      setErrorMsg(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 🔙 Back to chat
   const handleBack = () => {
     setStep("chat");
     setSearchResults(null);
+    setRequests([]);
     setSearchTerm("");
   };
 
+  // 🧭 Step-based rendering
   if (step === "invite") {
     return (
       <InviteList
@@ -65,6 +98,18 @@ export default function Chat({ user }) {
     );
   }
 
+  if (step === "requests") {
+    return (
+      <PendingRequests
+        requests={requests}
+        onBack={handleBack}
+        loading={loading}
+        errorMsg={errorMsg}
+      />
+    );
+  }
+
+  // 💬 Chat screen
   return (
     <div className="text-center space-y-6 p-4">
       <h1 className="text-3xl font-bold">Welcome {user.first_name}!</h1>
@@ -78,7 +123,7 @@ export default function Chat({ user }) {
         Socket status: {socketConnected ? "Connected" : "Disconnected"}
       </p>
 
-      {/* Search Bar */}
+      {/* Search + Requests */}
       <form
         onSubmit={handleSearch}
         className="flex items-center justify-center gap-2 max-w-md mx-auto"
@@ -96,6 +141,14 @@ export default function Chat({ user }) {
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
         >
           {loading ? "..." : "Search"}
+        </button>
+        <button
+          type="button"
+          onClick={handleRequests}
+          disabled={loading}
+          className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded disabled:opacity-50"
+        >
+          {loading ? "..." : "Requests"}
         </button>
       </form>
 
