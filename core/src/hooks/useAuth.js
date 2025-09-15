@@ -53,7 +53,7 @@ export function useAuth() {
           last_name: user_details.last_name,
         };
         localStorage.setItem("authData", JSON.stringify(authData));
-        setUser(data.data.user_details); // adjust depending on verify API response
+        setUser(data.data.user_details);
         return true;
       }
       setError(data.message || "Invalid OTP");
@@ -64,5 +64,6 @@ export function useAuth() {
     }
   };
 
-  return { requestOtp, confirmOtp, loading, error, user };
+  // <-- expose setUser so App can set user from localStorage
+  return { requestOtp, confirmOtp, loading, error, user, setUser };
 }

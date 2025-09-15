@@ -1,14 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Home from "./components/Home";
 import Otp from "./components/Otp";
 import Chat from "./components/Chat";
 import { useAuth } from "./hooks/useAuth";
 
 export default function App() {
-  const { requestOtp, confirmOtp, loading, error, user } = useAuth();
+  const { requestOtp, confirmOtp, loading, error, user, setUser } = useAuth();
   const [step, setStep] = useState("home"); // home | otp | chat
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState("+91");
+
+  // Check localStorage on load
+  useEffect(() => {
+    const authData = JSON.parse(localStorage.getItem("authData"));
+    if (authData) {
+      // Set user in state
+      setUser({
+        id: authData.id,
+        first_name: authData.first_name,
+        last_name: authData.last_name,
+        slug_name: authData.slug,
+      });
+      setStep("chat");
+    }
+  }, []);
 
   const handleSendOtp = async (phoneNumber, countryCode) => {
     const success = await requestOtp(phoneNumber, countryCode);
