@@ -42,6 +42,15 @@ export function useAuth() {
         fcm_token
       );
       if (data.success) {
+        const authData = {
+          access_token: token.access_token,
+          refresh_token: token.refresh_token,
+          id: user_details.id,
+          slug: user_details.slug_name,
+          first_name: user_details.first_name,
+          last_name: user_details.last_name,
+        };
+        localStorage.setItem("authData", JSON.stringify(authData));
         setUser(data.data.user_details); // adjust depending on verify API response
         return true;
       }
