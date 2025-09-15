@@ -58,7 +58,7 @@ function App() {
       {/* Step 1 - Home (Enter Identifier) */}
       {step === "home" && (
         <div className="text-center space-y-6 w-full max-w-sm">
-          <h1 className="text-3xl font-bold">Login to ChatApp 🚀</h1>
+          <h1 className="text-3xl font-bold">Skynect</h1>
           <input
             type="text"
             placeholder="Enter email or phone"
