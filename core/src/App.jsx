@@ -3,6 +3,9 @@ import Home from "./components/Home";
 import Otp from "./components/Otp";
 import Chat from "./components/Chat";
 import { useAuth } from "./hooks/useAuth";
+import { Layout, Spin } from "antd";
+
+const { Content } = Layout;
 
 export default function App() {
   const { requestOtp, confirmOtp, loading, error, user, setUser } = useAuth();
@@ -10,11 +13,10 @@ export default function App() {
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState("+91");
 
-  // Check localStorage on load
+  // Restore from localStorage on first load
   useEffect(() => {
-    const authData = JSON.parse(localStorage.getItem("authData"));
+    const authData = JSON.parse(localStorage.getItem("authData") || "null");
     if (authData) {
-      // Set user in state
       setUser({
         id: authData.id,
         first_name: authData.first_name,
@@ -23,7 +25,7 @@ export default function App() {
       });
       setStep("chat");
     }
-  }, []);
+  }, [setUser]);
 
   const handleSendOtp = async (phoneNumber, countryCode) => {
     const success = await requestOtp(phoneNumber, countryCode);
@@ -40,14 +42,29 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-      {step === "home" && (
-        <Home onSendOtp={handleSendOtp} loading={loading} error={error} />
-      )}
-      {step === "otp" && (
-        <Otp onVerifyOtp={handleVerifyOtp} loading={loading} error={error} />
-      )}
-      {step === "chat" && user && <Chat user={user} />}
-    </div>
+    <Layout style={{ minHeight: "100vh", background: "#f5f5f5" }}>
+      <Content
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "16px",
+        }}
+      >
+        {loading && step === "chat" && (
+          <Spin size="large" tip="Loading chat..." />
+        )}
+
+        {step === "home" && (
+          <Home onSendOtp={handleSendOtp} loading={loading} error={error} />
+        )}
+
+        {step === "otp" && (
+          <Otp onVerifyOtp={handleVerifyOtp} loading={loading} error={error} />
+        )}
+
+        {step === "chat" && user && <Chat user={user} />}
+      </Content>
+    </Layout>
   );
 }

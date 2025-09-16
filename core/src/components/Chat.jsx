@@ -2,9 +2,23 @@ import { useState } from "react";
 import { useChatSocket } from "../hooks/useChatSocket";
 import InviteList from "./InviteList";
 import PendingRequests from "./PendingRequests";
+import {
+  Layout,
+  Typography,
+  Form,
+  Input,
+  Button,
+  List,
+  Space,
+  Spin,
+  Alert,
+} from "antd";
+
+const { Content } = Layout;
+const { Title, Text } = Typography;
 
 export default function Chat({ user }) {
-  const authData = JSON.parse(localStorage.getItem("authData"));
+  const authData = JSON.parse(localStorage.getItem("authData") || "null");
   const token = authData?.access_token;
 
   const { chatList, socketConnected } = useChatSocket(user?.id, token);
@@ -16,11 +30,9 @@ export default function Chat({ user }) {
   const [step, setStep] = useState("chat"); // chat | invite | requests
   const [requests, setRequests] = useState([]);
 
-  // 🔍 Search API call
-  const handleSearch = async (e) => {
-    e.preventDefault();
+  // Search API
+  const handleSearch = async () => {
     if (!searchTerm.trim()) return;
-
     try {
       setLoading(true);
       setErrorMsg("");
@@ -29,19 +41,13 @@ export default function Chat({ user }) {
       const res = await fetch(
         `http://localhost:8000/auth/search/${searchTerm}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      if (!res.ok) {
-        throw new Error(`Search failed: ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(`Search failed: ${res.status}`);
       const data = await res.json();
       setSearchResults(data);
-      setStep("invite"); // 👉 Go to invite page
+      setStep("invite");
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
@@ -49,28 +55,21 @@ export default function Chat({ user }) {
     }
   };
 
-  // 📩 Fetch pending requests
+  // Fetch pending requests
   const handleRequests = async () => {
     try {
       setLoading(true);
       setErrorMsg("");
-
       const res = await fetch(
         "http://localhost:8000/invite/get_invitation_request",
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      if (!res.ok) {
-        throw new Error(`Requests fetch failed: ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(`Requests fetch failed: ${res.status}`);
       const data = await res.json();
       setRequests(data?.data?.invitation_request || []);
-      setStep("requests"); // 👉 Switch to requests page
+      setStep("requests");
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
@@ -78,7 +77,7 @@ export default function Chat({ user }) {
     }
   };
 
-  // 🔙 Back to chat
+  // Back to chat
   const handleBack = () => {
     setStep("chat");
     setSearchResults(null);
@@ -86,7 +85,7 @@ export default function Chat({ user }) {
     setSearchTerm("");
   };
 
-  // 🧭 Step-based rendering
+  // Step-based rendering
   if (step === "invite") {
     return (
       <InviteList
@@ -109,68 +108,72 @@ export default function Chat({ user }) {
     );
   }
 
-  // 💬 Chat screen
+  // Main chat screen
   return (
-    <div className="text-center space-y-6 p-4">
-      <h1 className="text-3xl font-bold">Welcome {user.first_name}!</h1>
-
-      {/* Socket status */}
-      <p
-        className={`text-sm ${
-          socketConnected ? "text-green-400" : "text-red-400"
-        }`}
+    <Layout style={{ minHeight: "100vh", background: "#f5f5f5" }}>
+      <Content
+        style={{
+          maxWidth: 600,
+          margin: "0 auto",
+          padding: "16px",
+          background: "#fff",
+        }}
       >
-        Socket status: {socketConnected ? "Connected" : "Disconnected"}
-      </p>
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <Title level={3} style={{ marginBottom: 0 }}>
+            Welcome {user.first_name}
+          </Title>
 
-      {/* Search + Requests */}
-      <form
-        onSubmit={handleSearch}
-        className="flex items-center justify-center gap-2 max-w-md mx-auto"
-      >
-        <input
-          type="text"
-          placeholder="Search by phone number..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
-        >
-          {loading ? "..." : "Search"}
-        </button>
-        <button
-          type="button"
-          onClick={handleRequests}
-          disabled={loading}
-          className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded disabled:opacity-50"
-        >
-          {loading ? "..." : "Requests"}
-        </button>
-      </form>
+          <Text type={socketConnected ? "success" : "danger"}>
+            Socket status: {socketConnected ? "Connected" : "Disconnected"}
+          </Text>
 
-      {/* Chat List */}
-      <h2 className="text-xl mt-6">Your Chats:</h2>
-      {chatList.length === 0 ? (
-        <p className="text-gray-400">No chats yet.</p>
-      ) : (
-        <ul className="space-y-2 max-w-md mx-auto text-left">
-          {chatList.map((chat) => (
-            <li
-              key={chat.conversation_id}
-              className="border p-2 rounded bg-gray-800"
-            >
-              <p>
-                <strong>{chat.name}</strong>
-              </p>
-              <p className="text-gray-400">{chat.last_message}</p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+          <Form layout="inline" onFinish={handleSearch} style={{ gap: 8 }}>
+            <Form.Item style={{ flex: 1, marginBottom: 0 }}>
+              <Input
+                placeholder="Search by phone number"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </Form.Item>
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                Search
+              </Button>
+            </Form.Item>
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Button onClick={handleRequests} loading={loading}>
+                Requests
+              </Button>
+            </Form.Item>
+          </Form>
+
+          {errorMsg && <Alert type="error" message={errorMsg} showIcon />}
+
+          <Title level={4} style={{ marginTop: 16 }}>
+            Your Chats
+          </Title>
+
+          {loading ? (
+            <Spin />
+          ) : chatList.length === 0 ? (
+            <Text type="secondary">No chats yet.</Text>
+          ) : (
+            <List
+              dataSource={chatList}
+              bordered
+              renderItem={(chat) => (
+                <List.Item key={chat.conversation_id}>
+                  <List.Item.Meta
+                    title={<strong>{chat.name}</strong>}
+                    description={chat.last_message}
+                  />
+                </List.Item>
+              )}
+            />
+          )}
+        </Space>
+      </Content>
+    </Layout>
   );
 }

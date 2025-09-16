@@ -1,18 +1,36 @@
 import { useEffect, useState } from "react";
-import { Card, List, Avatar, Tag, Dropdown, Menu, message, Modal } from "antd";
+import {
+  Card,
+  List,
+  Avatar,
+  Tag,
+  Dropdown,
+  Menu,
+  message,
+  Modal,
+  Spin,
+  Empty,
+} from "antd";
 
 export default function InvitedRequests() {
   const [requests, setRequests] = useState([]);
-const authData = JSON.parse(localStorage.getItem("authData"));
+  const [loading, setLoading] = useState(false);
+
+  const authData = JSON.parse(localStorage.getItem("authData") || "null");
   const token = authData?.access_token;
+
   useEffect(() => {
+    if (!token) return;
+    setLoading(true);
     fetch("http://localhost:8000/invite/get_invitation_request", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
       .then((res) => res.json())
-      .then((json) => setRequests(json.data.invitation_request || []));
+      .then((json) => setRequests(json.data?.invitation_request || []))
+      .catch(() => message.error("Failed to load requests"))
+      .finally(() => setLoading(false));
   }, [token]);
 
   const updateStatus = async (id, newStatus) => {
@@ -29,7 +47,6 @@ const authData = JSON.parse(localStorage.getItem("authData"));
       if (!res.ok) throw new Error("Failed to update status");
 
       message.success(`Invitation ${newStatus.toLowerCase()}`);
-      // update UI instantly
       setRequests((prev) =>
         prev.map((req) =>
           req.id === id ? { ...req, status: newStatus.toLowerCase() } : req
@@ -61,11 +78,10 @@ const authData = JSON.parse(localStorage.getItem("authData"));
           ]}
         />
       );
-
       return (
         <Dropdown overlay={menu} trigger={["click"]}>
-          <Tag color="orange" className="cursor-pointer">
-            Pending ⬇
+          <Tag color="orange" style={{ cursor: "pointer" }}>
+            Pending
           </Tag>
         </Dropdown>
       );
@@ -79,27 +95,39 @@ const authData = JSON.parse(localStorage.getItem("authData"));
   };
 
   return (
-    <div className="p-6 flex justify-center">
-      <Card title="Invitation Requests" className="w-full max-w-2xl shadow-lg">
-        <List
-          itemLayout="horizontal"
-          dataSource={requests}
-          renderItem={(item) => (
-            <List.Item actions={[renderStatus(item)]}>
-              <List.Item.Meta
-                avatar={
-                  <Avatar src={item.user_info.profile_image || undefined}>
-                    {item.user_info.first_name?.[0]}
-                  </Avatar>
-                }
-                title={`${item.user_info.first_name ?? ""} ${
-                  item.user_info.last_name ?? ""
-                }`}
-                description={`${item.user_info.country_code} ${item.user_info.phone}`}
-              />
-            </List.Item>
-          )}
-        />
+    <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+      <Card
+        title="Invitation Requests"
+        style={{ width: "100%", maxWidth: 600 }}
+        bordered={false}
+      >
+        {loading ? (
+          <Spin tip="Loading requests..." style={{ display: "block", textAlign: "center" }} />
+        ) : requests.length === 0 ? (
+          <Empty description="No invitation requests" />
+        ) : (
+          <List
+            itemLayout="horizontal"
+            dataSource={requests}
+            renderItem={(item) => (
+              <List.Item actions={[renderStatus(item)]}>
+                <List.Item.Meta
+                  avatar={
+                    <Avatar src={item.user_info?.profile_image}>
+                      {item.user_info?.first_name?.[0]}
+                    </Avatar>
+                  }
+                  title={`${item.user_info?.first_name ?? ""} ${
+                    item.user_info?.last_name ?? ""
+                  }`}
+                  description={`${item.user_info?.country_code ?? ""} ${
+                    item.user_info?.phone ?? ""
+                  }`}
+                />
+              </List.Item>
+            )}
+          />
+        )}
       </Card>
     </div>
   );

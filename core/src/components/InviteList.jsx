@@ -1,4 +1,16 @@
 import { useState } from "react";
+import {
+  Layout,
+  Typography,
+  Button,
+  Card,
+  Spin,
+  Alert,
+  Space,
+} from "antd";
+
+const { Content } = Layout;
+const { Title, Text } = Typography;
 
 export default function InviteList({ searchResults, onBack, loading, errorMsg }) {
   const userDetails = searchResults?.data?.user_details || {};
@@ -8,11 +20,11 @@ export default function InviteList({ searchResults, onBack, loading, errorMsg })
   const [inviteLoading, setInviteLoading] = useState(false);
 
   const handleInvite = async () => {
-    const authData = JSON.parse(localStorage.getItem("authData"));
+    const authData = JSON.parse(localStorage.getItem("authData") || "null");
     const token = authData?.access_token;
 
     if (!token || !userDetails.id) {
-      setInviteStatus("⚠️ Missing token or user ID");
+      setInviteStatus("Missing token or user ID");
       return;
     }
 
@@ -32,78 +44,98 @@ export default function InviteList({ searchResults, onBack, loading, errorMsg })
       });
 
       const data = await res.json();
-
       if (res.ok && data.success) {
-        setInviteStatus("✅ Invitation sent successfully!");
+        setInviteStatus("Invitation sent successfully!");
       } else {
-        setInviteStatus(`❌ Failed: ${data.message || "Unknown error"}`);
+        setInviteStatus(`Failed: ${data.message || "Unknown error"}`);
       }
     } catch (err) {
-      setInviteStatus(`❌ Network error: ${err.message}`);
+      setInviteStatus(`Network error: ${err.message}`);
     } finally {
       setInviteLoading(false);
     }
   };
 
   return (
-    <div className="p-4 text-center space-y-6">
-      <button
-        onClick={onBack}
-        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white"
+    <Layout style={{ minHeight: "100vh", background: "#f5f5f5" }}>
+      <Content
+        style={{
+          maxWidth: 480,
+          margin: "0 auto",
+          padding: "16px",
+        }}
       >
-        🔙 Back
-      </button>
+        <Space
+          direction="vertical"
+          size="middle"
+          style={{ width: "100%", textAlign: "center" }}
+        >
+          <Button onClick={onBack}>Back</Button>
 
-      <h2 className="text-2xl font-bold">Search Results</h2>
+          <Title level={3} style={{ marginBottom: 0 }}>
+            Search Results
+          </Title>
 
-      {loading && <p className="text-blue-400">Searching...</p>}
-      {errorMsg && <p className="text-red-400">{errorMsg}</p>}
+          {loading && <Spin tip="Searching..." />}
+          {errorMsg && <Alert type="error" message={errorMsg} showIcon />}
 
-      {searchResults && (
-        <div className="mt-4 max-w-md mx-auto p-4 border rounded bg-gray-800 text-left">
-          {userExists ? (
-            <>
-              <p>
-                <strong>Name:</strong> {userDetails.first_name || "N/A"}{" "}
-                {userDetails.last_name || ""}
-              </p>
-              <p>
-                <strong>Phone:</strong> {userDetails.country_code}{" "}
-                {userDetails.phone}
-              </p>
-              <p>
-                <strong>Email:</strong> {userDetails.email || "N/A"}
-              </p>
-              <p>
-                <strong>Slug:</strong> {userDetails.slug_name}
-              </p>
-              <p>
-                <strong>ID:</strong> {userDetails.id}
-              </p>
+          {searchResults && (
+            <Card
+              style={{
+                textAlign: "left",
+                background: "#fff",
+                marginTop: 8,
+              }}
+            >
+              {userExists ? (
+                <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                  <Text>
+                    <strong>Name:</strong> {userDetails.first_name || "N/A"}{" "}
+                    {userDetails.last_name || ""}
+                  </Text>
+                  <Text>
+                    <strong>Phone:</strong> {userDetails.country_code}{" "}
+                    {userDetails.phone}
+                  </Text>
+                  <Text>
+                    <strong>Email:</strong> {userDetails.email || "N/A"}
+                  </Text>
+                  <Text>
+                    <strong>Slug:</strong> {userDetails.slug_name}
+                  </Text>
+                  <Text>
+                    <strong>ID:</strong> {userDetails.id}
+                  </Text>
 
-              <button
-                onClick={handleInvite}
-                disabled={inviteLoading}
-                className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-white disabled:opacity-50"
-              >
-                {inviteLoading ? "Inviting..." : "✅ Invite / Start Chat"}
-              </button>
+                  <Button
+                    type="primary"
+                    onClick={handleInvite}
+                    loading={inviteLoading}
+                    block
+                  >
+                    Invite / Start Chat
+                  </Button>
 
-              {inviteStatus && (
-                <p className="mt-2 text-sm">
-                  {inviteStatus.startsWith("✅") ? (
-                    <span className="text-green-400">{inviteStatus}</span>
-                  ) : (
-                    <span className="text-red-400">{inviteStatus}</span>
+                  {inviteStatus && (
+                    <Alert
+                      style={{ marginTop: 8 }}
+                      type={
+                        inviteStatus.toLowerCase().includes("success")
+                          ? "success"
+                          : "error"
+                      }
+                      message={inviteStatus}
+                      showIcon
+                    />
                   )}
-                </p>
+                </Space>
+              ) : (
+                <Text type="secondary">User does not exist</Text>
               )}
-            </>
-          ) : (
-            <p className="text-gray-400">❌ User does not exist</p>
+            </Card>
           )}
-        </div>
-      )}
-    </div>
+        </Space>
+      </Content>
+    </Layout>
   );
 }
